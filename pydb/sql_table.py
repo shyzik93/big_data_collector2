@@ -35,15 +35,25 @@ class Table:
        fmeta = self.tfields[fname]
        return 'unique' in fmeta.lower()
 
+    def get_foreign_field(self, fname):
+        ''' Только, если мы уверены в наличии внешнего ключа '''
+
+        fmeta = self.tfields[fname].split()
+        foreign_table = fmeta[-1].split('(')[1][:-1]
+
+        if '.' in foreign_table:
+            foreign_table, foreign_field = foreign_table.split('.')
+        else:
+            foreign_field = foreign_table+'_id'
+
+        return foreign_table, foreign_field
+
     def build_field(self, fname, fmeta):
 
         _fmeta = fmeta.split()
         if self.is_field_foreign(fname):
-            foreign_table = _fmeta.pop().split('(')[1][:-1]
-            if '.' in foreign_table:
-                foreign_table, foreign_field = foreign_table.split('.')
-            else:
-                foreign_field = foreign_table+'_id'
+            _fmeta.pop()
+            foreign_table, foreign_field = self.get_foreign_field(fname)
             self.foreigns.append(f'FOREIGN KEY({self.tname}_{fname}) REFERENCES {foreign_table}({foreign_field})')
 
         fmeta = ' '.join(_fmeta)

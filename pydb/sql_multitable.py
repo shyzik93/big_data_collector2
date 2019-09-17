@@ -1,6 +1,6 @@
 from . import sql_table
 
-class SSimple:
+class Multitable:
 
     def __init__(self, db, tables, table_prefix, show_log, uniq_keys):
         self.db = db
@@ -14,10 +14,12 @@ class SSimple:
             _table.create()
         self.db.commit()
 
-    def add_row(self, fields):
+    def insert(self, tname, fields):
 
-        main_table = 'source_url'
+        for fname, v in fields.items():
+            fname = self.tables[tname].name+'_'+fname
+            if not self.tables[tname].is_field_foreign(fname): continue
+            foreign_table, foreign_value = self.tables[tname].get_foreign_field(fname)
 
-        for name, values in fields.items():
-            if not self.tables[main_table].is_field_foreign(name): continue
+            print(foreign_table, foreign_field)
             

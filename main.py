@@ -1,6 +1,6 @@
 from init import sets
 
-from pydb import struct_simple
+from pydb import sql_multitable
 from pydb import db_binders
 from pydb import sql_table
 #from pydb import sqltools
@@ -10,7 +10,7 @@ import os.path
 
 def ini2tables(tables_file):
     config = configparser.ConfigParser()
-    config.read(os.path.join('tables', tables_file))
+    config.read(os.path.join('configs', tables_file))
     
     tables = []
     for section_name in config:
@@ -42,14 +42,16 @@ if __name__ == '__main__':
     db.export(sets['db_dump_to'])
     print(db)
     
-    tables = ini2tables('url.ini')
-    stable = struct_simple.SSimple(db, tables, sets['db_table_prefix'], sets['show_log'], None)
+    tables = ini2tables('tables.ini')
+    stable = sql_multitable.Multitable(db, tables, sets['db_table_prefix'], sets['show_log'], None)
     print(stable.tables)
     
-    print(stable.tables['source_url'].build_drop())
-    print(stable.tables['source_url'].build_create())
-    print(stable.tables['title'].insert({'name':'ыыввв'}))
-    print(stable.tables['title'].insert(['name'], [['длрв ег впл'], ['оооооо']]))
+    print(stable.tables['url'].build_drop())
+    print(stable.tables['url'].build_create())
+    print(stable.tables['url_title'].insert({'name':'ыыввв'}))
+    print(stable.tables['url_title'].insert(['name'], [['длрв ег впл'], ['оооооо']]))
+    
+    stable.insert('url', {'schema': 'https', 'domain': 'mail.ru', 'path': 'user/inbox.cgi', 'title': 'Ваша почта'})
     
     #stable.tables['source_url'].drop()
     db.commit()
