@@ -17,9 +17,8 @@ class Multitable:
     def insert(self, tname, fields):
 
         for fname, v in fields.items():
-            fname = self.tables[tname].name+'_'+fname
             if not self.tables[tname].is_field_foreign(fname): continue
-            foreign_table, foreign_value = self.tables[tname].get_foreign_field(fname)
+            foreign_table, foreign_field = self.tables[tname].get_foreign_field(fname)
 
             print(foreign_table, foreign_field)
             

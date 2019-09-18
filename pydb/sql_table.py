@@ -13,65 +13,111 @@ class Table:
 
         self.name = tname_prefix + tname
 
-        self.tfields = copy.deepcopy(tfields)
-        self.tfields['id'] = 'INTEGER PRIMARY KEY AUTOINCREMENT'
-        self.tfields['is_deleted'] = 'INTEGER NOT NULL DEFAULT \'0\' '
-        self.tfields['date_add'] = 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP'
+        #self.tfields = copy.deepcopy(tfields)
+        tfields['id'] = 'INTEGER PRIMARY KEY AUTOINCREMENT'
+        tfields['is_deleted'] = 'INTEGER NOT NULL DEFAULT \'0\' '
+        tfields['date_add'] = 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP'
 
         '''for k in self.tfields.keys():
             self.tfields[k] = self.tfields[k]
             del self.tfields[k]
         '''
 
+        self.tfs = {}
+        for fname, v in tfields.items():
+            tf = {
+                'name': None,
+                'type': None,
+                'notnull': False,
+                'unique': False,
+                'foreign':False,
+                'foreign_table': None,
+                'foreign_field': None,
+                'autoincr': False,
+                'default': None,
+                'primary_key': False,
+            }
+
+            fmeta = v.lower().split()
+            while len(fmeta) != 1:
+                e = fmeta.pop()
+
+                if e.startswith('ref('):
+                    foreign_table = e[4:-1].strip()
+                    if '.' in foreign_table:
+                        foreign_table, foreign_field = foreign_table.split('.')
+                    else:
+                        foreign_field = 'id'
+                    tf['foreign'] = True
+                    tf['foreign_table'] = foreign_table
+                    tf['foreign_field'] = foreign_field # псевдоним
+                elif e == 'unique':
+                    tf['unique'] = True
+                elif e == 'null':
+                    fmeta.pop()
+                    tf['notnull'] = True
+                elif e == 'autoincrement':
+                    tf['autoincr'] = True
+                elif len(fmeta) > 1 and fmeta[-1] == 'default':
+                    tf['default'] = e
+                elif fmeta[-1] == 'primary' and e == 'key':
+                    fmeta.pop()
+                    tf['primary_key'] = True
+
+            tf['type'] = fmeta.pop()
+
+            orig_name = self.tname+'_'+fname
+            if tf['foreign']: orig_name += '_id'
+            tf['name'] = orig_name
+
+            #print('    ', tf)
+
+            self.tfs[fname] = tf
+
         self.foreigns = []
 
     def is_field_foreign(self, fname):
 
-       fmeta = self.tfields[fname].split()
-       return fmeta[-1].lower().startswith('ref')
+       return self.tfs[fname]['foreign']
 
     def is_field_unique(self, fname):
 
-       fmeta = self.tfields[fname]
-       return 'unique' in fmeta.lower()
+       return self.tfs[fname]['unique']
 
     def get_foreign_field(self, fname):
         ''' Только, если мы уверены в наличии внешнего ключа '''
 
-        fmeta = self.tfields[fname].split()
-        foreign_table = fmeta[-1].split('(')[1][:-1]
+        return self.tfs[fname]['foreign_table'], self.tfs[fname]['foreign_field']
 
-        if '.' in foreign_table:
-            foreign_table, foreign_field = foreign_table.split('.')
-        else:
-            foreign_field = foreign_table+'_id'
+    def build_field(self, fname):
 
-        return foreign_table, foreign_field
+        fmeta = []
 
-    def build_field(self, fname, fmeta):
+        if self.tfs[fname]['notnull']:
+            fmeta.append('not null')
+        if self.tfs[fname]['unique']:
+            fmeta.append('unique')
+        if self.tfs[fname]['primary_key']:
+            fmeta.append('primary key')
+        if self.tfs[fname]['autoincr']:
+            fmeta.append('autoincrement')
+        if self.tfs[fname]['default'] is not None:
+            fmeta.append('default '+self.tfs[fname]['default'])
 
-        _fmeta = fmeta.split()
-        if self.is_field_foreign(fname):
-            _fmeta.pop()
-            foreign_table, foreign_field = self.get_foreign_field(fname)
-            self.foreigns.append(f'FOREIGN KEY({self.tname}_{fname}) REFERENCES {foreign_table}({foreign_field})')
+        if self.tfs[fname]['foreign']:
+            self.foreigns.append(f"foreign key({self.tfs[fname]['name']}) references {self.tfs[fname]['foreign_table']}({self.tfs[fname]['foreign_field']})")
 
-        fmeta = ' '.join(_fmeta)
+        fmeta = ' '.join(fmeta)
 
-        return f"`{self.tname}_{fname}` {fmeta}"
+        return f"`{self.tfs[fname]['name']}` {self.tfs[fname]['type']} {fmeta}"
 
     def build_create(self):
 
         fields = []
         self.foreigns = []
 
-        #fields.append(self.build_field('id', 'INTEGER PRIMARY KEY AUTOINCREMENT'))
-
-        for fname, fmeta in self.tfields.items():
-            fields.append(self.build_field(fname, fmeta))
-
-        #fields.append(self.build_field({'is_deleted': 'INTEGER NOT NULL DEFAULT \'0\' '}))
-        #fields.append(self.build_field('date_add', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP'))
+        for fname in self.tfs:
+            fields.append(self.build_field(fname))
 
         fields += self.foreigns
 
