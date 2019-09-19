@@ -20,5 +20,9 @@ class Multitable:
             if not self.tables[tname].is_field_foreign(fname): continue
             foreign_table, foreign_field = self.tables[tname].get_foreign_field(fname)
 
-            print(foreign_table, foreign_field)
+            fields[fname] = self.tables[foreign_table].insert({foreign_field:v})
+
+            #print(foreign_table, foreign_field, v_id)
+
+        return self.tables[tname].insert(fields)
             

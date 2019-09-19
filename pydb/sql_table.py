@@ -44,10 +44,10 @@ class Table:
 
                 if e.startswith('ref('):
                     foreign_table = e[4:-1].strip()
-                    if '.' in foreign_table:
-                        foreign_table, foreign_field = foreign_table.split('.')
-                    else:
-                        foreign_field = 'id'
+                    #if '.' in foreign_table:
+                    foreign_table, foreign_field = foreign_table.split('.')
+                    #else:
+                    #    foreign_field = 'id'
                     tf['foreign'] = True
                     tf['foreign_table'] = foreign_table
                     tf['foreign_field'] = foreign_field # псевдоним
@@ -75,6 +75,9 @@ class Table:
             self.tfs[fname] = tf
 
         self.foreigns = []
+
+    def __getitem__(self, fname):
+        return self.tfs[fname]['name']
 
     def is_field_foreign(self, fname):
 
@@ -105,7 +108,7 @@ class Table:
             fmeta.append('default '+self.tfs[fname]['default'])
 
         if self.tfs[fname]['foreign']:
-            self.foreigns.append(f"foreign key({self.tfs[fname]['name']}) references {self.tfs[fname]['foreign_table']}({self.tfs[fname]['foreign_field']})")
+            self.foreigns.append(f"foreign key({self.tfs[fname]['name']}) references {self.tfs[fname]['foreign_table']}({self.tfs[fname]['foreign_table']}_id)")
 
         fmeta = ' '.join(fmeta)
 
@@ -164,7 +167,7 @@ class Table:
                 pass
         '''
 
-        return self.sqltools.insert(self.name, keys, values, self.name+'_')
+        return self.sqltools.insert(self.name, keys, values, self)
 
     def drop(self):
 

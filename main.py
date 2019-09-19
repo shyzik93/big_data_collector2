@@ -51,7 +51,11 @@ if __name__ == '__main__':
     print(stable.tables['url_title'].insert({'name':'ыыввв'}))
     print(stable.tables['url_title'].insert(['name'], [['длрв ег впл'], ['оооооо']]))
     
-    stable.insert('url', {'schema': 'https', 'domain': 'mail.ru', 'path': 'user/inbox.cgi', 'title': 'Ваша почта'})
+    print(stable.insert('url', {'schema': 'https', 'domain': 'mail.ru', 'path': 'user/inbox.cgi', 'title': 'Ваша почта'}))
+    
+    #a = 'bhuijb'
+    #sql = "INSERT INTO `url_title` ('url_title_name') VALUES (?) WHERE NOT EXISTS (SELECT * FROM `url_title` WHERE `url_title_name` = ?)"
+    #db.execute(sql, (a,a))
     
     #stable.tables['source_url'].drop()
     db.commit()

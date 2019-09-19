@@ -13,7 +13,10 @@ class SQLTools():
 
     def process_key(self, key, fname_prefix=''):
         if key == '*' or '(' in key or ' as ' in key.lower(): return key
-        if not key.startswith('`'): key = '`'+fname_prefix+key
+
+        if fname_prefix and not key.startswith('`') and not key.endswith('`'): key = fname_prefix[key]
+
+        if not key.startswith('`'): key = '`'+key
         if not key.endswith('`'): key = key+'`'
         return key
 
