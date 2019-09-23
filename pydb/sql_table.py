@@ -18,11 +18,6 @@ class Table:
         tfields['is_deleted'] = 'INTEGER NOT NULL DEFAULT \'0\' '
         tfields['date_add'] = 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP'
 
-        '''for k in self.tfields.keys():
-            self.tfields[k] = self.tfields[k]
-            del self.tfields[k]
-        '''
-
         self.tfs = {}
         for fname, v in tfields.items():
             tf = {
@@ -137,7 +132,25 @@ class Table:
         #print(self.build_create())
         self.db.execute(self.build_create())
 
-    def insert(self, keys, values=None):
+    def select(self, keys, where):
+
+        return self.sqltools.select(self.name, keys, where)
+
+    def insert(self, fields):
+
+        if len(fields) == 1:
+
+            k, v = [i for i in fields.items()][0]
+
+            kid = self.tfs['id']['name']#f'{self.tname}_id'
+            if self.is_field_unique(k):
+                k = self.tfs[k]['name']#f'{self.tname}_{k}'
+                r = self.sqltools.select(self.name, kid, [[k, '=', v]]).fetchall()
+                if r: return r[0][kid]
+
+        return self.sqltools.insert(self.name, fields, None, self)
+
+    def insert2(self, keys, values=None):
         ''' проверка на уникальность работает лишь для одного поля и одного значения '''
 
         if len(keys) == 1:

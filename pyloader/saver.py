@@ -1,63 +1,14 @@
 import os.path
 import os
 import datetime
-import sqlite3
+import urllib.parse
             
 class SaverSQL():
 
-    def __init__(self, path_to_save, domain):
+    def __init__(self, mtables):
         
         self.prewrite = None
-
-        if domain.startswith('http://'): domain = domain[7:]
-        if domain.startswith('https://'): domain = domain[8:]
-        self.domain = domain
-        path_to_save = os.path.join(os.path.dirname(__file__), path_to_save)
-
-        if not os.path.exists(path_to_save):
-            os.mkdir(path_to_save)
-        
-        self.path_to_save = path_to_save
-        self.path_db = os.path.join(self.path_to_save, "meta.db")
-        
-        self.c = sqlite3.connect(self.path_db)
-        self.c.row_factory = sqlite3.Row
-        self.cu = self.c.cursor()
-        
-        sql1 = """
-       CREATE TABLE IF NOT EXISTS `meta` (
-           `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-           `domain` VAR(255) NOT NULL
-       );
-       """
-       
-        sql2 = """
-       CREATE TABLE IF NOT EXISTS `links` (
-           `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-           `url` VAR(255) NOT NULL,
-           `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-           `title` VAR(255) NOT NULL
-       );
-        """
-        
-        self.cu.execute(sql1)
-        self.cu.execute(sql2)
-       
-        self.c.commit()
-        
-        sql = "SELECT * FROM `meta` WHERE 1"
-        r = self.cu.execute(sql).fetchall()
-        if not r:
-            sql = "INSERT INTO `meta` (`domain`) VALUES (?)"
-            self.cu.execute(sql, (domain,))
-            self.c.commit()
-     
-    def normalize_url(self, url):
-        if url.startswith('http://'): url = url[7:]
-        if url.startswith('https://'): url = url[8:]
-        if url.startswith(self.domain): url = url.replace(self.domain, '')
-        if not url.startswith('/'): url = '/'+url
-        return url
+        self.mtables = mtables
        
     def get_timemark(self):
         return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -77,28 +28,30 @@ class SaverSQL():
         with open(path_file, "r") as f:
             return f.read()
     
-    def save(self, req, url, title, start_timemark=None):
-     
-        
-        # save meta on base
-        
-        url = self.normalize_url(url)
-        
-        meta = (url, title)
-        
-        sql = "SELECT * FROM `links` WHERE `url`=?"
-        r = self.cu.execute(sql, (url,)).fetchall()
+    def save(self, content, url, title):
 
-        if not r:
+        # save meta on base
+
+        url = urllib.parse.urlparse(url)
+
+        fields = {
+            'scheme': url.scheme,
+            'domain': url.netloc,
+            'path': url.path + url.query,
+            'title': title,
+        }
         
-            sql = "INSERT INTO `links` (`url`, `title`) VALUES (?, ?)"
-            self.cu.execute(sql, meta)
+        #r = self.mtables.select('url', fields)
+
+        #if not r:
+ 
+        max_index = self.mtables.insert_unique('url', fields)
             
-            max_index = self.cu.lastrowid
+        #else:
             
-        else:
-            
-            max_index = r[0]['id']
+        #    max_index = r[0]['id']
+
+        return max_index
 
         # save file on disk
         
