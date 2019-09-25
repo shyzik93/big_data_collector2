@@ -90,10 +90,10 @@ class SQLTools():
 
         return indexes[0] if len(indexes)==1 else indexes
 
-    def select(self, tables, keys, where):
+    def select(self, tables, keys, where, fname_prefix=''):
 
         tables = self.process_keys(tables)
-        keys = self.process_keys(keys)
+        keys = self.process_keys(keys, fname_prefix)
         where, where_v = self.process_where(where)#' AND '.join(where)
 
         sql = f"SELECT {keys} FROM {tables} WHERE {where}"

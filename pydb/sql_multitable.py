@@ -14,6 +14,9 @@ class Multitable:
             _table.create()
         self.db.commit()
 
+    def __getitem__(self, tname):
+        return self.tables[tname]
+
     def insert(self, tname, fields):
 
         # Заменяем значения на id

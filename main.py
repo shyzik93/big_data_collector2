@@ -4,7 +4,7 @@ from pydb import sql_multitable
 from pydb import db_binders
 from pydb import sql_table
 #from pydb import sqltools
-from pyloader import saver
+from pyloader import saver_base
 
 import configparser
 import os.path
@@ -37,7 +37,7 @@ def ini2tables(tables_file):
 db = db_binders.get_db_binder(sets['db_type'], sets['db_sets'][sets['db_type']])
 tables = ini2tables('tables.ini')
 mtable = sql_multitable.Multitable(db, tables, sets['db_table_prefix'], sets['show_log'], None)
-saver = saver.SaverSQL(mtable)
+saver = saver_base.SaverSQL(mtable, sets['path_row_data'])
 
 #db = pydb.DB(sets)
 
