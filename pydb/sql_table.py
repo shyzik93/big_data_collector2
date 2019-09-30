@@ -134,7 +134,9 @@ class Table:
 
     def select(self, keys, where):
 
-        return self.sqltools.select(self.name, keys, where)
+        #print('    ', self.tname, keys, where)
+
+        return self.sqltools.select(self.name, keys, where, self)
 
     def insert(self, fields):
 

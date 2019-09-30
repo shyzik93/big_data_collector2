@@ -17,6 +17,28 @@ class Multitable:
     def __getitem__(self, tname):
         return self.tables[tname]
 
+    def select(self, tname, keys, where):
+
+        where2 = []
+
+        #print('orig:', where)
+
+        for cond in where:
+            fname = cond[0]
+            if self.tables[tname].is_field_foreign(fname):
+                foreign_table, foreign_field = self.tables[tname].get_foreign_field(fname)
+                r = self.tables[foreign_table].select('id', [[foreign_field, '=', cond[2]]])
+                _r = r.fetchone()
+                if not _r: return r
+                #r = r.fetchall()
+                where2.append([fname, cond[1], _r[self.tables[foreign_table]['id']]])
+            else:
+                where2.append(cond)
+
+        #print('new:', where2)
+
+        return self.tables[tname].select(keys, where2)
+
     def insert(self, tname, fields):
 
         # Заменяем значения на id
@@ -52,13 +74,16 @@ class Multitable:
 
         where = []
         for key in unique_keys:
-            where.append([self.tables[tname][key], '=', fields[key]])
+            where.append([key, '=', fields[key]])
 
         kid = self.tables[tname]['id']
-        r = self.tables[tname].select(kid, where).fetchall()
+        r = self.tables[tname].select('id', where).fetchall()
         if r: return r[0][kid]
 
         # Вставляем строку
 
         return self.tables[tname].insert(fields)
-            
+
+    def commit(self):
+
+        self.db.commit()

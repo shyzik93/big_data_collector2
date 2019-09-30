@@ -11,33 +11,33 @@ class SQLTools():
             vs.append(v)
         return ', '.join(ks), vs
 
-    def process_key(self, key, fname_prefix=''):
+    def process_key(self, key, repl=None):
         if key == '*' or '(' in key or ' as ' in key.lower(): return key
 
-        if fname_prefix and not key.startswith('`') and not key.endswith('`'): key = fname_prefix[key]
+        if repl and not key.startswith('`') and not key.endswith('`'): key = repl[key]
 
         if not key.startswith('`'): key = '`'+key
         if not key.endswith('`'): key = key+'`'
         return key
 
-    def process_keys(self, keys, fname_prefix=''):
+    def process_keys(self, keys, repl=None):
         if isinstance(keys, str):
             keys = [keys]
         for i, key in enumerate(keys):
-            keys[i] = self.process_key(key, fname_prefix)
+            keys[i] = self.process_key(key, repl)
         return ','.join(keys)
 
-    def process_cond(self, cond):
+    def process_cond(self, cond, repl=None):
         #print('    cond2:', cond)
         key, op, value = cond
         if value is None:
             if op == '=': op = ' IS '
             elif op == '!=': op = ' is not '
-        key = self.process_key(key)
+        key = self.process_key(key, repl)
         #print('    cond:', f'{key}{op}?', value)
         return f'{key}{op}?', value
 
-    def process_where(self, where, main_op='AND'):
+    def process_where(self, where, main_op='AND', repl=None):
         #print('  where2:', where)
         if isinstance(where, tuple): # уже конвертированное
             return where[0], where[1]
@@ -45,7 +45,7 @@ class SQLTools():
         for i, cond in enumerate(where):
             if isinstance(cond, str):
                 continue # для выражений типа "`tbl1`.`field1`=`tbl2`.`field1`"
-            cond, value = self.process_cond(cond)
+            cond, value = self.process_cond(cond, repl)
             where[i] = cond
             where_v.append(value)
         #print('where:', f' {main_op} '.join(where), where_v)
@@ -69,7 +69,7 @@ class SQLTools():
         sql = f"UPDATE {table} SET {ks} WHERE {where}"
         self.db.execute(sql, tuple(vs))
 
-    def insert(self, table, keys, values=None, fname_prefix=''):
+    def insert(self, table, keys, values=None, repl=None):
 
         table = self.process_key(table)
 
@@ -77,7 +77,7 @@ class SQLTools():
             values = [list(keys.values())]
             keys = list(keys.keys())
 
-        ks = self.process_keys(keys, fname_prefix)
+        ks = self.process_keys(keys, repl)
 
         indexes = []
 
@@ -90,11 +90,11 @@ class SQLTools():
 
         return indexes[0] if len(indexes)==1 else indexes
 
-    def select(self, tables, keys, where, fname_prefix=''):
+    def select(self, tables, keys, where, repl=None):
 
         tables = self.process_keys(tables)
-        keys = self.process_keys(keys, fname_prefix)
-        where, where_v = self.process_where(where)#' AND '.join(where)
+        keys = self.process_keys(keys, repl)
+        where, where_v = self.process_where(where, 'AND', repl)#' AND '.join(where)
 
         sql = f"SELECT {keys} FROM {tables} WHERE {where}"
         #print(sql, '\n', where_v)

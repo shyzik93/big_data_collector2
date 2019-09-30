@@ -12,19 +12,27 @@ class SaverSQL():
        
     def get_timemark(self):
         return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
+
     def exists(self, url):
-        
-        url = self.normalize_url(url)
-        
-        sql = "SELECT * FROM `links` WHERE `url`=?"
-        r = self.cu.execute(sql, (url,)).fetchall()
+
+        url = urllib.parse.urlparse(url)
+
+        r = self.mtables.select('url', ['id', 'domain'], [
+            ['scheme', '=', url.scheme],
+            ['domain', '=', url.netloc],
+            ['path', '=', url.path + url.query]
+        ]).fetchall()
+
         if r:
-            return r[0]['id']
+            return r[0][self.mtables['url']['domain']], r[0][self.mtables['url']['id']]
         return False
     
-    def open(self, index):
-        path_file = os.path.join(self.path_to_save, str(index))
+    def open(self, url_index):
+
+        domain_field_id = self.mtables['url_domain']['id']
+        domain_index = self.mtables['url'].select('domain', [['id', '=', url_index]]).fetchall()[0][domain_field_id]
+
+        path_file = os.path.join(self.path_to_save, str(domain_index), str(url_index))
         with open(path_file, "r") as f:
             return f.read()
     
@@ -45,9 +53,8 @@ class SaverSQL():
 
         # save file on disk
 
-        domain_field = self.mtables['url_domain']['name']
         domain_field_id = self.mtables['url_domain']['id']
-        domain_index = self.mtables['url_domain'].select(domain_field_id, [[domain_field, '=', url.netloc]]).fetchall()[0][domain_field_id]
+        domain_index = self.mtables['url_domain'].select('id', [['name', '=', url.netloc]]).fetchall()[0][domain_field_id]
         
         path_to_save = os.path.join(self.path_to_save, str(domain_index))
         if not os.path.exists(path_to_save):
@@ -63,7 +70,7 @@ class SaverSQL():
 
         # commit if file was saved
         
-        self.mtables.db.commit()
+        self.mtables.commit()
                 
         return max_index
 

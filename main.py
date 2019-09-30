@@ -1,3 +1,4 @@
+import requests
 from init import sets
 
 from pydb import sql_multitable
@@ -5,9 +6,19 @@ from pydb import db_binders
 from pydb import sql_table
 #from pydb import sqltools
 from pyloader import saver_base
+from pyloader import saver
+import parsers
 
 import configparser
 import os.path
+
+'''
+import math
+t = 0.118
+a = 12.25
+print('   ', (0.7276/t)*math.sin((a/2)*math.pi/180))
+'''
+#exit()
 
 def ini2tables(tables_file):
     config = configparser.ConfigParser()
@@ -37,9 +48,19 @@ def ini2tables(tables_file):
 db = db_binders.get_db_binder(sets['db_type'], sets['db_sets'][sets['db_type']])
 tables = ini2tables('tables.ini')
 mtable = sql_multitable.Multitable(db, tables, sets['db_table_prefix'], sets['show_log'], None)
-saver = saver_base.SaverSQL(mtable, sets['path_row_data'])
+saver2 = saver_base.SaverSQL(mtable, sets['path_row_data'])
+saver = saver.SaverSQL(mtable, sets['path_row_data'])
 
-#db = pydb.DB(sets)
+cfg = {
+    'saver': saver,
+    'tbls': mtable,
+    'db': db,
+}
+
+parser = parsers.get('news_del_yeysk', cfg)
+parser.run()
+
+exit()
 
 if __name__ == '__main__':
     
@@ -56,7 +77,17 @@ if __name__ == '__main__':
     
     print(mtable.insert('url', {'scheme': 'https', 'domain': 'mail.ru', 'path': 'user/inbox.cgi', 'title': 'Ваша почта'}))
     
-    print(saver.save('my text', 'https://vk.com/user1/profile?audio=6', 'mytitle'))
+    print(saver2.save('my text', 'https://vk.com/user1/profile?audio=6', 'mytitle'))
+    
+    url = 'http://m.deleysk.ru'
+    r = requests.get(url)
+    print(saver.save(r, url))
+    
+    print(saver.exists( 'https://vk.com/user1/profile?audio=6'))
+    r = saver.exists('http://m.deleysk.ru')
+    print(r)
+    if r:
+        print(saver.open(r[1]))
     
     #a = 'bhuijb'
     #sql = "INSERT INTO `url_title` ('url_title_name') VALUES (?) WHERE NOT EXISTS (SELECT * FROM `url_title` WHERE `url_title_name` = ?)"
