@@ -58,6 +58,8 @@ cfg = {
 }
 
 parser = parsers.get('news_del_yeysk', cfg)
+parser = parsers.get('loader0007', cfg)
+parser = parsers.get('political_parties', cfg)
 parser.run()
 
 exit()

@@ -27,6 +27,10 @@ class SaverSQL(saver_base.SaverSQL):
             for el in els:
                 el.getparent().remove(el)
 
+    def open(self, url_index):
+        d = saver_base.SaverSQL.open(self, url_index)
+        return html.document_fromstring(d)
+
     def save(self, req, url, selectors=None):
 
         if req.headers['Content-Type'].startswith("text/"):
